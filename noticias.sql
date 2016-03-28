@@ -375,4 +375,3 @@ FROM matia ma
   LEFT JOIN usuas us ON ma.cd_usuas_alter = us.cd_usuas
   LEFT JOIN notia no ON ma.cd_matia = no.cd_matia
 WHERE ma.id_matia_tipo = 1
-LIMIT 10

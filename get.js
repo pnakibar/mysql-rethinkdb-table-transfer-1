@@ -50,7 +50,7 @@ rconn.then((conn) => {
   }
 }).then((val) => {
   // tratar o arquivo.sql
-  const sqlString = '(' + fs.readFileSync(SQL_FILE).toString() + ') temp_table' // .wrap('(', ') temp_table')
+  const sqlString = fs.readFileSync(SQL_FILE).toString()  // .wrap('(', ') temp_table')
 
   if (LOWER_BOUND && LOWER_BOUND <= val.old_materia_cd) {
     console.warn('nesta migração irá acontecer sobre-escrita de dados!')
@@ -58,21 +58,20 @@ rconn.then((conn) => {
 
   if (LOWER_BOUND && UPPER_BOUND) {
     console.log('migração começando de: ' + LOWER_BOUND + ' e indo até: ' + UPPER_BOUND)
-    return sqlString + ' WHERE old_materia_cd >= ' + LOWER_BOUND + ' AND WHERE old_materia_cd <= ' + UPPER_BOUND
+    return sqlString + ' AND ma.cd_matia >= ' + LOWER_BOUND + ' AND ma.cd_matia <= ' + UPPER_BOUND
   } else if (LOWER_BOUND) {
     console.log('migração começando de: ' + LOWER_BOUND)
-    return sqlString + ' WHERE old_materia_cd >= ' + LOWER_BOUND
+    return sqlString + ' AND ma.cd_matia >= ' + LOWER_BOUND
   } else {
     // retornar promise com as linhas do banco
     console.log('continuando a migração a partir de: ' + val.old_materia_cd)
-    return sqlString + ' WHERE old_materia_cd > ' + val.old_materia_cd
+    return sqlString + ' AND ma.cd_matia > ' + val.old_materia_cd
   }
 }).then((queryString) => {
-    console.log(queryString)
-    return knex.select().from(queryString)
-}).then((rows) => {
+    return knex.raw(queryString)
+}).then((response) => {
   // processar as linhas do banco
-  rows.forEach((row) => {
+  response[0].forEach((row) => {
     getAutores(row.old_materia_id).then((autores) => {
         // adiciona coluna autores no json
         row.autores = autores
