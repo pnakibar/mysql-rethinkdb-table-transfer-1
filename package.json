@@ -1,0 +1,23 @@
+{
+  "name": "migrations-knex",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "asyncawait": "^1.0.3",
+    "co": "^4.6.0",
+    "crypto": "0.0.3",
+    "highland": "^2.7.1",
+    "knex": "^0.10.0",
+    "mysql": "^2.10.2",
+    "mysql2": "^1.0.0-rc.1",
+    "request-promise": "^2.0.1",
+    "rethink": "^1.4.0"
+  }
+}
