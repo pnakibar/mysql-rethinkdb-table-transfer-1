@@ -14,9 +14,10 @@ const rooturl = process.env.cxenserooturl
 var cxense = require('./cxense.js')
 var r = require('rethinkdb')
 // conexão por padrão tenta no localhost
+console.log('RETHINK HOST: ' + RETHINK_HOST)
 var rconn = r.connect({
-  db: RETHINK_DB,
-  host: RETHINK_HOST
+  host: RETHINK_HOST,
+  db: RETHINK_DB
 })
 
 
