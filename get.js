@@ -35,7 +35,7 @@ const knex = require('knex')({
 
 
 function getAutores (id_materia) {
-  return knex.select()
+  return knex.select('*')
       .from('autmt')
       .innerJoin('autor', 'autmt.cd_autor', 'autor.cd_autor')
       .where('cd_matia', '=', id_materia)
@@ -73,7 +73,7 @@ rconn.then((conn) => {
 }).then((response) => {
   // processar as linhas do banco
   response[0].forEach((row) => {
-    getAutores(row.old_materia_id).then((autores) => {
+    getAutores(row.old_materia_cd).then((autores) => {
         // adiciona coluna autores no json
         console.log('autores: ')
         console.log(autores)
