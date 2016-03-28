@@ -68,6 +68,7 @@ rconn.then((conn) => {
     return sqlString + ' WHERE old_materia_cd > ' + val.old_materia_cd
   }
 }).then((queryString) => {
+    console.log(queryString)
     return knex.select().from(queryString)
 }).then((rows) => {
   // processar as linhas do banco
@@ -99,5 +100,6 @@ rconn.then((conn) => {
     })
   })
 }).then(() => {
+  rconn.then((conn) => conn.close())
 	console.log('terminou!')
 })
