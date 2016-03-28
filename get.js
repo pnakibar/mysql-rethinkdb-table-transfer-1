@@ -58,7 +58,7 @@ rconn.then((conn) => {
 
   if (LOWER_BOUND && UPPER_BOUND) {
     console.log('migração começando de: ' + LOWER_BOUND + ' e indo até: ' + UPPER_BOUND)
-    return sqlString + ' WHERE old_materia_cd >= ' + LOWER_BOUND + 'AND WHERE old_materia_cd <= ' + UPPER_BOUND
+    return sqlString + ' WHERE old_materia_cd >= ' + LOWER_BOUND + ' AND WHERE old_materia_cd <= ' + UPPER_BOUND
   } else if (LOWER_BOUND) {
     console.log('migração começando de: ' + LOWER_BOUND)
     return sqlString + ' WHERE old_materia_cd >= ' + LOWER_BOUND
