@@ -75,10 +75,11 @@ rconn.then((conn) => {
   response[0].forEach((row) => {
     getAutores(row.old_materia_id).then((autores) => {
         // adiciona coluna autores no json
+        console.log(autores)
         row.autores = autores
         return row
     }).then((fRow) => {
-      // inserir no rethinkdb
+      console.log(fRow)
       return rconn.then((conn) => {
         return r.table(RETHINK_TABLE).insert(fRow).run(conn)
       })
