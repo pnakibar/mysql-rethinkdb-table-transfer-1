@@ -100,6 +100,5 @@ rconn.then((conn) => {
     })
   })
 }).then(() => {
-  rconn.then((conn) => conn.close())
 	console.log('terminou!')
 })
