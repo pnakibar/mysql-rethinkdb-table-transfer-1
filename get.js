@@ -54,7 +54,7 @@ rconn.then((conn) => {
   const sqlString = fs.readFileSync(SQL_FILE).toString()  // .wrap('(', ') temp_table')
 
   if (LOWER_BOUND && LOWER_BOUND <= val.old_materia_cd) {
-    console.warn('nesta migração irá acontecer sobre-escrita de dados!')
+    console.warn('nesta migração não irá acontecer sobre-escrita de dados!')
   }
 
   if (LOWER_BOUND && UPPER_BOUND) {
@@ -75,25 +75,21 @@ rconn.then((conn) => {
   response[0].forEach((row) => {
     getAutores(row.old_materia_cd).then((autores) => {
         // adiciona coluna autores no json
-        console.log('autores: ')
-        console.log(autores)
         row.autores = autores
         return row
     }).then((fRow) => {
-      console.log(fRow)
       return rconn.then((conn) => {
         return r.table(RETHINK_TABLE).insert(fRow).run(conn)
       })
     }).then(() => {
-      console.log('inserted: ' + row.old_materia_id)
+      console.log('inserido no rethinkdb: ' + row.old_materia_id)
     }).then(() => {
       // inserir no cxense
-      console.log('cxense in: ' + row.old_materia_path)
       return cxense.postProfileURL(rooturl + row.old_materia_path)
     }).then((response) => {
       // resposta do cxense
-      console.log('inserted on cxense: ' + row.old_materia_id)
-      console.log('response: ')
+      console.log('inserido no cxense: ' + row.old_materia_id)
+      console.log('resposta cxense: ')
       console.log(response)
     }).catch((error) => {
       // tratar erro
@@ -101,6 +97,4 @@ rconn.then((conn) => {
       console.log(error)
     })
   })
-}).then(() => {
-	console.log('terminou!')
 })
