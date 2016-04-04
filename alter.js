@@ -157,7 +157,7 @@
 
                 linhas.forEach((row) => {
                     let promise = insere_autores(row)
-                        //todo enfileirar a operacao de gravar no cxense e processar o html da materia aqui
+                    //todo enfileirar a operacao de gravar no cxense e processar o html da materia aqui
                         .then((row) => writeRowRethink(row,conn));
 
                     // enfileirando promise
@@ -181,8 +181,8 @@
             console.error(err.message);
 
             /* fonte
-            * http://stackoverflow.com/questions/5266152/how-to-exit-in-node-js
-            * */
+             * http://stackoverflow.com/questions/5266152/how-to-exit-in-node-js
+             * */
             process.exit(-1);
 
         } );

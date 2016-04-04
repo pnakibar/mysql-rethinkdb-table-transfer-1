@@ -74,8 +74,8 @@
     };
 
 
-    let sendToCxEnse = (row,rooturl) => {
-        cxense.publish(rooturl + row.old_materia_path)
+    let sendToCxEnse = (row,rooturl,conn) => {
+        returncxense.postProfileURL(rooturl + row.old_materia_path)
             .then((response) => {
                 // resposta do cxense
                 console.log('inserido no cxense: ' + row.old_materia_id);
@@ -157,7 +157,7 @@
 
                 linhas.forEach((row) => {
                     let promise = insere_autores(row)
-                        //todo enfileirar a operacao de gravar no cxense e processar o html da materia aqui
+                    //todo enfileirar a operacao de gravar no cxense e processar o html da materia aqui
                         .then((row) => writeRowRethink(row,conn));
 
                     // enfileirando promise
@@ -181,8 +181,8 @@
             console.error(err.message);
 
             /* fonte
-            * http://stackoverflow.com/questions/5266152/how-to-exit-in-node-js
-            * */
+             * http://stackoverflow.com/questions/5266152/how-to-exit-in-node-js
+             * */
             process.exit(-1);
 
         } );
