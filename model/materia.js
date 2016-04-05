@@ -2,6 +2,7 @@
  * definição de todos os modelos de modelagem
  */
 (function () {
+    'use strict';
     let autor = {
         "nome": "",
         "email": "",
@@ -12,24 +13,13 @@
     };
 
 
-    let contentText = {
-        "text": ""
-    };
-
-    let contentHTML = {
-        "type": "html",
-        "html": ""
-    };
-
 
     let materia = {
         "autor": [],
         "tema": {
             "nome": ""
         },
-        "tag": {
-            "nome": ""
-        },
+        "tag": [],
         "sessao": "",
         "local": "",
         "imagem": {
@@ -44,13 +34,9 @@
             "titulo": "",
             "conteudo": {
                 "subTitulo": "",
-                "newsContent": []
+                "newsContent": ""
             },
             "chamada": "",
-            "infoMaqBusca": {
-                "tags": "",
-                "descricao": ""
-            },
             "endEletronico": "",
             "endEletronicoCompart": "",
             "impresso": {
@@ -90,8 +76,7 @@
         sourceData : {} ,
         sourceId : "",
         materia : materia,
-        cxResponse : {},
-        data : ""
+        cxResponse : {}
     };
 
 
@@ -100,8 +85,6 @@
     module.exports = {
         materia : materia,
         autor : autor,
-        contentText : contentText,
-        contentHTML : contentHTML,
         persistData : persistData
     };
 

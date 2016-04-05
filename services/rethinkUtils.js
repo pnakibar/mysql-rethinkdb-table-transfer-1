@@ -26,9 +26,12 @@
      * @param name
      */
     let getConfig = (name) => {
-        rconn_config
+        return rconn_config
             .then((conn) => {
-                r.table('integration').filter({name: name})
+                return r.table('config').filter({name: name}).run(conn)
+            })
+            .then((cursor) => {
+                return cursor.toArray();
             })
             .then((rows) => {
                 return _.head(rows);
@@ -71,7 +74,8 @@
     module.exports = {
         getConnection : rconn,
         getConfig : getConfig,
-        getMax : getMax
+        getMax : getMax,
+        r : r
     };
 
 
