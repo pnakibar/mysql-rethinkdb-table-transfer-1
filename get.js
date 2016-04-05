@@ -1,3 +1,7 @@
+// todo
+// melhorar o fluxo de saida em caso de erros
+// implementar saida forçada em caso de erros continuos.
+
 (function () {
     "use strict";
     const _ = require('lodash');
@@ -189,8 +193,8 @@
 
     let callMaxValue = (conn) => {
         console.info('parte 1 - obtendo o old_materia_cd');
-
         return rUtils.r.table(RETHINK_TABLE)
+            .filter({sourceType : INTEGRATION_NAME})
             .max('sourceId')
             .run(conn)
             .catch((err) => {
@@ -271,6 +275,9 @@
                             process.exit(0);
                         })
 
+                    }).catch((err) => {
+                        console.log(err.message);
+                        process.exit(-1);
                     })
 
 
