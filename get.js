@@ -22,7 +22,7 @@
         // conforme escopo , deve seguir do maior + 1
         let min = 0;
         if (maxValue){
-            min = lowerBound ? lowerBound : maxValue.old_materia_cd + 1;
+            min = lowerBound ? lowerBound : maxValue.sourceId + 1;
         }
 
 
@@ -196,7 +196,7 @@
             .catch((err) => {
                 if (err) {
                     console.warn('rethinkdb está vazio!');
-                    return {old_materia_cd: -1}
+                    return {sourceId: -1}
                 }
             })
     };
