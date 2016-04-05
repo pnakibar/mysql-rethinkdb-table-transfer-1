@@ -2,54 +2,18 @@
     "use strict";
     const _ = require('lodash');
     const fs = require('fs');
-    let cxense = require('./cxense.js');
-    var r = require('rethinkdb');
+    let cxense = require('./services/cxense');
+    let rUtils = require('./services/rethinkUtils');
+    let models = require('./model/materia');
+
 
     // args
-    const db_host = process.argv[2];
-    const db_user = process.argv[3];
-    const db_password = process.argv[4];
-    const db_database = process.argv[5];
-    const SQL_FILE = process.argv[6];
-    const RETHINK_HOST = process.argv[7];
-    const RETHINK_DB = process.argv[8];
-    const RETHINK_TABLE = process.argv[9];
-    const LOWER_BOUND = process.argv[10] ? process.argv[10] : null;
-    const UPPER_BOUND = process.argv[11] ? process.argv[11] : null;
+    const INTEGRATION_NAME = process.argv[2];
+    const SQL_FILE = INTEGRATION_NAME + '.sql';
+    const RETHINK_TABLE = process.argv[3];
+    const LOWER_BOUND = process.argv[4] ? process.argv[4] : null;
+    const UPPER_BOUND = process.argv[5] ? process.argv[5] : null;
 
-
-    // env vars
-    const ROOT_URL = process.env.cxenserooturl;
-
-
-    // conexão por padrão tenta no localhost
-    console.log('RETHINK HOST: ' + RETHINK_HOST);
-
-    let rconn = r.connect({
-        host: RETHINK_HOST,
-        db: RETHINK_DB
-    });
-
-
-    const knex = require('knex')({
-        client: 'mysql',
-        connection: {
-            host: db_host,
-            user: db_user,
-            password: db_password,
-            database: db_database,
-            charset: 'latin1'
-        }
-    });
-
-    // ler arquivo sql
-    let getAutores = (cd_matia) => {
-        console.info('obtendo autor para a materia ' + cd_matia);
-        return knex.select('*')
-            .from('autmt')
-            .innerJoin('autor', 'autmt.cd_autor', 'autor.cd_autor')
-            .where('cd_matia', '=', cd_matia)
-    };
 
     let assemblySQL = (maxValue,lowerBound,upperBound,sqlpath) => {
         const sqlString = fs.readFileSync(sqlpath).toString();
@@ -74,8 +38,8 @@
     };
 
 
-    let sendToCxEnse = (row,rooturl,conn) => {
-        returncxense.postProfileURL(rooturl + row.old_materia_path)
+    let sendToCxEnse = (row,rooturl) => {
+        cxense.publish(rooturl + row.old_materia_path)
             .then((response) => {
                 // resposta do cxense
                 console.log('inserido no cxense: ' + row.old_materia_id);
@@ -85,55 +49,149 @@
             });
     };
 
+    let transform = (row) => {
+
+
+
+
+        let data = models.persistData;
+
+        //data.sourceData = row;
+        data.sourceType = INTEGRATION_NAME;
+        data.sourceId = row.old_materia_cd;
+        data.cxResponse = {};
+
+
+        let preencheAutores =  (autor) => {
+            let xret = {};
+
+            xret.nome = autor.nm_autor;
+            xret.email = autor.ds_autor_email;
+            xret.facebook  = autor.ds_autor_faceb;
+            xret.instagram  = null ;
+            xret.twitter  = autor.ds_autor_twite ;
+            xret.endEletronicoPessoal  = null;
+
+            return xret;
+        };
+
+        data.materia = {
+            "autor" : row.autores.map(d=> preencheAutores(d)),
+            "tag": row.old_materia_palavra ? row.old_materia_palavra.split(','): [],
+            "sessao": "",
+            "local": "",
+            "imagem": {
+                "url": "",
+                "caption": ""
+            },
+            "materia": {
+                "id": row.old_materia_id,
+                "dataInclusao": row.old_materia_data_inclusao,
+                "dataPublicacao": row.old_materia_data_publicacao,
+                "assunto": row.old_materia_assunto,
+                "titulo": row.old_materia_titulo,
+                "conteudo": {
+                    "subTitulo": "",
+                    "newsContent": row.old_materia_ds
+                },
+                "chamada": row.old_materia_chape,
+                "endEletronico": row.old_materia_path,
+                "endEletronicoCompart": row.old_materia_path_encurtado,
+                "impresso": {
+                    "edicao": row.old_jornal_cd + ' ' + row.old_jornal_ds,
+                    "ehPaga": false
+                },
+                "podeComentar": true,
+                "geolocalizacao": {
+                    "latitude": 0,
+                    "longitude": 0
+                },
+                tipo: row.old_materia_assunto,
+                //"tipo": {
+                //    "video": false,
+                //    "audio": false,
+                //    "entrevista": false,
+                //    "artigo": false,
+                //    "materiaEspecial": false,
+                //    "transito": false
+                //},
+                "dataValidade": null,
+                "humor" : null,
+                //"humor": {
+                //    "feliz": false,
+                //    "neutro": false,
+                //    "triste": false
+                //},
+                "relevanciaEditorial": null
+            },
+            "fonte": {
+                "nome": row.old_noticia_nm_fonte ? row.old_noticia_nm_fonte : null ,
+                "endEletronico": row.old_noticia_ds_fonte_url ? row.old_noticia_ds_fonte_url : null
+            }
+
+        };
+
+
+
+
+
+        //data.data = {
+        //    id : row.old_materia_id,
+        //    autor: row.autores.map(d=> preencheAutores(d)),
+        //    tag : row.old_materia_palavra ? row.old_materia_palavra.split[',']: null,
+        //    dataInclusao : row.old_materia_data_inclusao,
+        //    dataPublicacao: row.old_materia_data_publicacao,
+        //    assunto: row.old_materia_assunto,
+        //    titulo : row.old_materia_titulo,
+        //    conteudo : row.old_materia_ds,
+        //    chamada : row.old_materia_chape,
+        //    endEletronico : row.old_materia_path,
+        //    endEletronicoCompart: row.old_materia_path_encurtado,
+        //    impresso: row.old_jornal_cd + ' ' + row.old_jornal_ds,
+        //    geolocalizacao: null, // duvida (obs.: Desenvolvi webservice que retorna a geolocalização conforme endereço informado)
+        //    tipo: row.old_materia_assunto,
+        //    dataValidade: null,
+        //    humor: null,
+        //    relevanciaEditorial: null,
+        //    fonte: row.nm_notia_fonte ?   row.nm_notia_fonte  + ' ' + row.old_noticia_ds_fonte_url : null
+        //};
+
+        return data;
+    };
+
+
 
     let writeRowRethink = (row,conn) => {
-        return r.table(RETHINK_TABLE).insert(row).run(conn)
-            .then((resp) => {
-                console.log(resp);
-            })
-            .catch((error) => {
-                // tratar erro , a principio o erro de linha não para o processo.
-                console.error('error on ' + row.old_materia_id + ':');
-                console.error(error);
 
-            });
+        try {
+            let wdata = transform(row);
+
+            return rUtils.r.table(RETHINK_TABLE).insert(wdata).run(conn)
+                .then((resp) => {
+                    console.log(resp);
+                })
+                .catch((error) => {
+                    // tratar erro , a principio o erro de linha não para o processo.
+                    console.error('error on ' + row.old_materia_id + ':');
+                    console.error(error);
+
+                });
+
+        }catch (err) {
+            throw err;
+        }
+
+
+
+
     };
-
-
-    let insere_autores = (row) => {
-
-        let xret = row;
-
-        return getAutores(xret.old_materia_cd)
-            .then((autores) => {
-                // adiciona coluna autores no json
-                console.info('obtido numero de autores da materia '+ xret.old_materia_cd + ':' + autores.length );
-                xret.autores = autores;
-                return xret;
-            }).catch((err) => {
-                console.error('erro obtendo autores da materia = ', xret.old_materia_cd);
-            });
-
-
-        //Promise.all(promises).then(() => {
-        //    console.info('processos executados com sucesso');
-        //    process.exit(0);
-        //})
-    };
-
-
-
-
-
-    let getMySQLdata = (sql) => knex.raw(sql);
-
 
 
     let callMaxValue = (conn) => {
         console.info('parte 1 - obtendo o old_materia_cd');
 
-        return r.table(RETHINK_TABLE)
-            .max('old_materia_cd')
+        return rUtils.r.table(RETHINK_TABLE)
+            .max('sourceId')
             .run(conn)
             .catch((err) => {
                 if (err) {
@@ -143,49 +201,93 @@
             })
     };
 
+    rUtils.getConfig('gazetaonline_filme')
+        .then((config) => {
+            const knex = require('knex')({
+                client: 'mysql',
+                connection: {
+                    host: config.db.dbhost,
+                    user: config.db.dbuser,
+                    password: config.db.dbpass,
+                    database: config.db.dbname,
+                    charset: 'latin1' //config.charset
+                }
+            });
 
-    rconn
-        .then((conn) => {
+            let getMySQLdata = (sql) => knex.raw(sql);
 
-            let dados =  callMaxValue(conn)
-                .then((maxValue) =>   getMySQLdata(assemblySQL(maxValue,LOWER_BOUND,UPPER_BOUND,SQL_FILE)) )
-                .then((response) => _.head(response));
+            // ler arquivo sql
+            let getAutores = (cd_matia) => {
+                console.info('obtendo autor para a materia ' + cd_matia);
+                return knex.select('*')
+                    .from('autmt')
+                    .innerJoin('autor', 'autmt.cd_autor', 'autor.cd_autor')
+                    .where('cd_matia', '=', cd_matia)
+            };
 
-            /*aplicando transformacoes e gravando linha a linha e cascateando em promise*/
-            dados.then((linhas) => {
-                let promises = [];
 
-                linhas.forEach((row) => {
-                    let promise = insere_autores(row)
-                        //todo enfileirar a operacao de gravar no cxense e processar o html da materia aqui
-                        .then((row) => writeRowRethink(row,conn));
+            let insere_autores = (row) => {
 
-                    // enfileirando promise
-                    promises.push(promise);
-                });
+                let xret = row;
 
-                /*aguardando o final para que todas as promises processem*/
-                Promise.all(promises).then(() => {
-                    console.info('processo finalizado com sucesso');
-                    process.exit(0);
+                return getAutores(xret.old_materia_cd)
+                    .then((autores) => {
+                        // adiciona coluna autores no json
+                        console.info('obtido numero de autores da materia '+ xret.old_materia_cd + ':' + autores.length );
+                        xret.autores = autores;
+                        return xret;
+                    }).catch((err) => {
+                        console.error('erro obtendo autores da materia = ', xret.old_materia_cd);
+                    });
+
+            };
+
+
+            rUtils.getConnection
+                .then((conn) => {
+
+                    let dados =  callMaxValue(conn)
+                        .then((maxValue) =>   getMySQLdata(assemblySQL(maxValue,LOWER_BOUND,UPPER_BOUND,SQL_FILE)) )
+                        .then((response) => _.head(response));
+
+                    /*aplicando transformacoes e gravando linha a linha e cascateando em promise*/
+                    dados.then((linhas) => {
+                        let promises = [];
+
+                        linhas.forEach((row) => {
+                            let promise = insere_autores(row)
+                            //todo enfileirar a operacao de gravar no cxense e processar o html da materia aqui
+                                .then((row) => {
+                                    return writeRowRethink(row,conn)
+                                }).catch((err) => console.error(err.message));
+
+                            // enfileirando promise
+                            promises.push(promise);
+                        });
+
+                        /*aguardando o final para que todas as promises processem*/
+                        Promise.all(promises).then(() => {
+                            console.info('processo finalizado com sucesso');
+                            process.exit(0);
+                        })
+
+                    })
+
+
                 })
+                .catch((err) => {
+                    console.error(err.message);
 
-            })
+                    /* fonte
+                     * http://stackoverflow.com/questions/5266152/how-to-exit-in-node-js
+                     * */
+                    process.exit(-1);
+
+                } );
+
+    });
 
 
-
-
-
-        })
-        .catch((err) => {
-            console.error(err.message);
-
-            /* fonte
-            * http://stackoverflow.com/questions/5266152/how-to-exit-in-node-js
-            * */
-            process.exit(-1);
-
-        } );
 
 
 
