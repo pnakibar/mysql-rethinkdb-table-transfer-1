@@ -43,7 +43,6 @@ const knex = require('knex')({
 
 knex.select()
   .from('matia')
-  .limit(10)
   .then((rows) => {
     return rows.reduce((previous, row, currentIndex, original) => {
       var tagsCounted = countTags(extractTags(row['ds_matia']))
