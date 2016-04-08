@@ -6,40 +6,27 @@
     "use strict";
     const _ = require('lodash');
     const fs = require('fs');
+    const ejs2html = require('./services/ejs2html');
     let cxense = require('./services/cxense');
     let rUtils = require('./services/rethinkUtils');
     let models = require('./model/materia');
+    let shortid = require('shortid');
+
+
+    // shortid conf
+    shortid.characters('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
+
 
 
     // args
     const INTEGRATION_NAME = process.argv[2];
-    const SQL_FILE = INTEGRATION_NAME + '.sql';
+    const SQL_FILE = 'sqls/' + INTEGRATION_NAME + '.sql';
     const RETHINK_TABLE = process.argv[3];
     const LOWER_BOUND = process.argv[4] ? process.argv[4] : null;
     const UPPER_BOUND = process.argv[5] ? process.argv[5] : null;
 
 
-    let assemblySQL = (maxValue,lowerBound,upperBound,sqlpath) => {
-        const sqlString = fs.readFileSync(sqlpath).toString();
 
-
-        // conforme escopo , deve seguir do maior + 1
-        let min = 0;
-        if (maxValue){
-            min = lowerBound ? lowerBound : maxValue.sourceId + 1;
-        }
-
-
-        if (min && upperBound) {
-            console.info('migração começando de: ' + min + ' e indo até: ' + upperBound);
-            return sqlString + ' AND ma.cd_matia >= ' + min + ' AND ma.cd_matia <= ' + upperBound
-        } else{
-            console.info('migração começando de: ' + min);
-            return sqlString + ' AND ma.cd_matia >= ' + min
-        }
-
-
-    };
 
 
     let sendToCxEnse = (row,rooturl) => {
@@ -55,16 +42,13 @@
 
     let transform = (row) => {
 
-
-
-
         let data = models.persistData;
 
-        //data.sourceData = row;
+        data.sourceData = row;
         data.sourceType = INTEGRATION_NAME;
         data.sourceId = row.old_materia_cd;
+        data.friendlyId = shortid.generate();
         data.cxResponse = {};
-
 
         let preencheAutores =  (autor) => {
             let xret = {};
@@ -79,14 +63,32 @@
             return xret;
         };
 
+
+        // tratando o endereço antigo.
+        let rexp_path = str.match(/(^[^_]*_conteudo)|(?=[A-Za-z0-9.-]+\.[A-Za-z0-9.-]{3,4}$).+/g);
+        let rexp_file = _.tail(_.head(str.match(/((?=[A-Za-z.-]+\.[A-Za-z0-9.-]{3,4}$).+)/g)));
+
+
+
+
+        let taxonomia = "";
+        rexp_path.forEach((el) => {
+            taxonomia = str.replace(el,'');
+        });
+
+        let file = rexp_file + '-' + data.friendlyId;
+
+
         data.materia = {
+            "taxonomia" : taxonomia,
+            "file" : file,
             "autor" : row.autores.map(d=> preencheAutores(d)),
             "tag": row.old_materia_palavra ? row.old_materia_palavra.split(','): [],
             "sessao": "",
             "local": "",
             "imagem": {
-                "url": "",
-                "caption": ""
+                "url": "", // aguardar email de deuclerio da analise do midia
+                "caption": row.old_materia_midia
             },
             "materia": {
                 "id": row.old_materia_id,
@@ -95,7 +97,7 @@
                 "assunto": row.old_materia_assunto,
                 "titulo": row.old_materia_titulo,
                 "conteudo": {
-                    "subTitulo": "",
+                    "subTitulo": row.old_materia_chape,
                     "newsContent": row.old_materia_ds
                 },
                 "chamada": row.old_materia_chape,
@@ -136,30 +138,6 @@
         };
 
 
-
-
-
-        //data.data = {
-        //    id : row.old_materia_id,
-        //    autor: row.autores.map(d=> preencheAutores(d)),
-        //    tag : row.old_materia_palavra ? row.old_materia_palavra.split[',']: null,
-        //    dataInclusao : row.old_materia_data_inclusao,
-        //    dataPublicacao: row.old_materia_data_publicacao,
-        //    assunto: row.old_materia_assunto,
-        //    titulo : row.old_materia_titulo,
-        //    conteudo : row.old_materia_ds,
-        //    chamada : row.old_materia_chape,
-        //    endEletronico : row.old_materia_path,
-        //    endEletronicoCompart: row.old_materia_path_encurtado,
-        //    impresso: row.old_jornal_cd + ' ' + row.old_jornal_ds,
-        //    geolocalizacao: null, // duvida (obs.: Desenvolvi webservice que retorna a geolocalização conforme endereço informado)
-        //    tipo: row.old_materia_assunto,
-        //    dataValidade: null,
-        //    humor: null,
-        //    relevanciaEditorial: null,
-        //    fonte: row.nm_notia_fonte ?   row.nm_notia_fonte  + ' ' + row.old_noticia_ds_fonte_url : null
-        //};
-
         return data;
     };
 
@@ -168,11 +146,11 @@
     let writeRowRethink = (row,conn) => {
 
         try {
-            let wdata = transform(row);
 
-            return rUtils.r.table(RETHINK_TABLE).insert(wdata).run(conn)
+            return rUtils.r.table(RETHINK_TABLE).insert(row).run(conn)
                 .then((resp) => {
                     console.log(resp);
+                    return resp;
                 })
                 .catch((error) => {
                     // tratar erro , a principio o erro de linha não para o processo.
@@ -204,6 +182,9 @@
                 }
             })
     };
+
+
+
 
     rUtils.getConfig('gazetaonline_filme')
         .then((config) => {
@@ -250,6 +231,30 @@
             rUtils.getConnection
                 .then((conn) => {
 
+                    let assemblySQL = (maxValue,lowerBound,upperBound,sqlpath) => {
+                        const sqlString = fs.readFileSync(sqlpath).toString();
+
+
+                        // conforme escopo , deve seguir do maior + 1
+                        let min = 0;
+                        if (maxValue){
+                            min = lowerBound ? lowerBound : maxValue.sourceId + 1;
+                        }
+
+
+                        if (min && upperBound) {
+                            console.info('migração começando de: ' + min + ' e indo até: ' + upperBound);
+                            return sqlString + ' AND ma.cd_matia >= ' + min + ' AND ma.cd_matia <= ' + upperBound
+                        } else {
+                            console.info('migração começando de: ' + min);
+                            return sqlString + ' AND ma.cd_matia >= ' + min
+                        }
+
+                    };
+
+                    // implementar range para simular stream com _.range([start=0], end, [step=1])
+
+
                     let dados =  callMaxValue(conn)
                         .then((maxValue) =>   getMySQLdata(assemblySQL(maxValue,LOWER_BOUND,UPPER_BOUND,SQL_FILE)) )
                         .then((response) => _.head(response));
@@ -262,8 +267,14 @@
                             let promise = insere_autores(row)
                             //todo enfileirar a operacao de gravar no cxense e processar o html da materia aqui
                                 .then((row) => {
-                                    return writeRowRethink(row,conn)
-                                }).catch((err) => console.error(err.message));
+                                    let wdata = transform(row);
+                                    return ejs2html.ejs2html('template.ejs',__dirname+'/model',wdata.file,__dirname+wdata.taxonomia, wdata)
+                                        .then((result) => wdata);
+                                })
+                                .then((wdata) => {
+                                    return writeRowRethink(wdata,conn)
+                                })
+                                .catch((err) => console.error(err.message));
 
                             // enfileirando promise
                             promises.push(promise);

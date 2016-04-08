@@ -1,0 +1,1 @@
+select ds_matia from matia where  ds_matia REGEXP '<.?>' >

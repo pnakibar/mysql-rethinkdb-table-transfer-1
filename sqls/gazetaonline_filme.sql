@@ -386,4 +386,5 @@ FROM matia ma
   LEFT JOIN tetag te ON ma.cd_tetag = te.cd_tetag
   LEFT JOIN usuas us ON ma.cd_usuas_alter = us.cd_usuas
   LEFT JOIN filme fi ON ma.cd_matia = fi.cd_matia
+  LEFT JOIN midma md ON ma.cd_matia = md.cd_matia
 WHERE ma.id_matia_tipo = 5

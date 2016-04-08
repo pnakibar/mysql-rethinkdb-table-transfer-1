@@ -15,6 +15,7 @@
 
 
     let materia = {
+        "friendlyId" : "",
         "autor": [],
         "tema": {
             "nome": ""
