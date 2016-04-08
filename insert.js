@@ -249,8 +249,7 @@
                     host: config.db.dbhost,
                     user: config.db.dbuser,
                     password: config.db.dbpass,
-                    database: config.db.dbname,
-                    charset: 'latin1' //config.charset
+                    database: config.db.dbname
                 }
             });
 
