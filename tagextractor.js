@@ -55,4 +55,7 @@ knex.select()
         console.log(tag + '\t' + tagsCounted[tag])
     }
     process.exit(0)
+  }).catch((err) => {
+    console.err(err)
+    process.exit(1)
   })
