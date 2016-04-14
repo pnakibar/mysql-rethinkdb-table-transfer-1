@@ -1,4 +1,188 @@
-<html>
-<head></head>
-<body><%= friendlyId %></body>
-</html>
+
+<main class="pageContent" role="main">
+  <article class="newsBlock wrapper ">
+    <!-- Vai receber a classe "cat-algumacoisa" dependendo da categoria da página -->
+    <header class="newsHead">
+      <h1>
+        <section class="sectionLevel">
+          <p class="section"><%= noticia.sessao %></p>
+          <p class="kicker"><%= noticia.local %></p>
+        </section>
+        <section class="newsLevel">
+          <p class="headline"><%= noticia.materia.titulo %></p>
+          <p class="subhead"><%= noticia.materia.descricao %></p>
+        </section>
+      </h1>
+    </header>
+    <section class="newsContent">
+      <section class="byline">
+        <nav class="shareOptions">
+          <ul class="social">
+            <li><a href=""><i class="icon-facebook" title="Compartilhe no Facebook"></i>1.5 K</a></li>
+            <li><a href=""><i class="icon-twitter" title="Compartilhe no Twitter"></i>900</a></li>
+            <li><a href=""><i class="icon-linkedin" title="Compartilhe no LinkedIn"></i>25</a></li>
+          </ul>
+          <ul class="onsite">
+            <li><a href=""><i class="icon-comments" title="Faça um comentário"></i>12</a></li>
+            <li><a href=""><i class="icon-email" title="Envie por e-mail"></i></a></li>
+          </ul>
+        </nav>
+        <% for(var i=0; i < noticia.autor.length; i++){ %>
+        <address class="author">
+          <figure class="avatar"><img src="<%= noticia.autor[i].avatar %>" alt=""></figure>
+          <p class="name"><%= noticia.autor[i].nome %></p>
+          <p class="url"><a href="mailto:<%= noticia.autor[i].email %>"><%= noticia.autor[i].email %></a></p>
+          <p class="desc">Enviada especial à São Paulo</p>
+          <p class="dateTime">
+            <time itemprop="dateCreated"><%- new Date(noticia.materia.dataPublicacao).toLocaleDateString() %></time>
+            <br>Atualizado às
+            <time itemprop="dateModified"><%- new Date(noticia.materia.dataPublicacao).toLocaleTimeString() %></time>
+          </p>
+        </address>
+        <% } %>
+      </section>
+      <section class="text">
+        <%- noticia.materia.conteudo %>
+      </section>
+      <section class="related">
+        <nav class="tags">
+          <h4>Tags relacionadas</h4>
+          <ul>
+            <li><a href="#">Ronaldo</a></li>
+            <li><a href="#">Cicarelli</a></li>
+            <li><a href="#">Futebol</a></li>
+          </ul>
+        </nav>
+        <nav class="relatedNews">
+          <h4>Notícias relacionadas</h4>
+          <ul>
+            <li><a href="#">Veja o que Ronaldo Fenômeno fez para apagar tatuagem para Cicarelli</a></li>
+            <li><a href="#">Veja o que Ronaldo Fenômeno fez para apagar tatuagem para Cicarelli</a></li>
+            <li><a href="#">Veja o que Ronaldo Fenômeno fez para apagar tatuagem para Cicarelli</a></li>
+            <li><a href="#">Veja o que Ronaldo Fenômeno fez para apagar tatuagem para Cicarelli</a></li>
+          </ul>
+        </nav>
+      </section>
+      <section class="sidebar">
+        <div class="com-news com-sz-300x600">
+          <img src="" alt="">
+        </div>
+        <nav class="ranking">
+          <header>
+            <hgroup>
+              <h2>Ranking.</h2>
+              <h3>As mais lidas</h3>
+            </hgroup>
+          </header>
+          <ol>
+            <li>
+              <a href="#">
+                <figure><img src="" alt=""></figure>
+                <p class="kicker">Vila Velha</p>
+                <p class="headline">Veja o que Ronaldo Fenômeno fez para apagar tatuagem para
+                  Cicarelli</p>
+              </a>
+            </li>
+            <li>
+              <a href="#">
+                <figure><img src="" alt=""></figure>
+                <p class="kicker">Vila Velha</p>
+                <p class="headline">Veja o que Ronaldo Fenômeno fez para apagar tatuagem para
+                  Cicarelli</p>
+              </a>
+            </li>
+            <li>
+              <a href="#">
+                <figure><img src="" alt=""></figure>
+                <p class="kicker">Vila Velha</p>
+                <p class="headline">Veja o que Ronaldo Fenômeno fez para apagar tatuagem para
+                  Cicarelli</p>
+              </a>
+            </li>
+            <li>
+              <a href="#">
+                <p class="kicker">Vila Velha</p>
+                <p class="headline">Veja o que Ronaldo Fenômeno fez para apagar tatuagem para
+                  Cicarelli</p>
+              </a>
+            </li>
+            <li>
+              <a href="#">
+                <p class="kicker">Vila Velha</p>
+                <p class="headline">Veja o que Ronaldo Fenômeno fez para apagar tatuagem para
+                  Cicarelli</p>
+              </a>
+            </li>
+          </ol>
+          <footer><a href="#">Veja todo o ranking</a></footer>
+        </nav>
+        <nav class="ranking">
+          <header>
+            <hgroup>
+              <h2>Ranking.</h2>
+              <h3>Do Editor</h3>
+            </hgroup>
+          </header>
+          <ol>
+            <li>
+              <a href="#">
+                <p class="kicker">Vila Velha</p>
+                <p class="headline">Veja o que Ronaldo Fenômeno fez para apagar tatuagem para
+                  Cicarelli</p>
+              </a>
+            </li>
+            <li>
+              <a href="#">
+                <p class="kicker">Vila Velha</p>
+                <p class="headline">Veja o que Ronaldo Fenômeno fez para apagar tatuagem para
+                  Cicarelli</p>
+              </a>
+            </li>
+            <li>
+              <a href="#">
+                <p class="kicker">Vila Velha</p>
+                <p class="headline">Veja o que Ronaldo Fenômeno fez para apagar tatuagem para
+                  Cicarelli</p>
+              </a>
+            </li>
+            <li>
+              <a href="#">
+                <p class="kicker">Vila Velha</p>
+                <p class="headline">Veja o que Ronaldo Fenômeno fez para apagar tatuagem para
+                  Cicarelli</p>
+              </a>
+            </li>
+            <li>
+              <a href="#">
+                <p class="kicker">Vila Velha</p>
+                <p class="headline">Veja o que Ronaldo Fenômeno fez para apagar tatuagem para
+                  Cicarelli</p>
+              </a>
+            </li>
+          </ol>
+          <footer><a href="#">Veja todo o ranking</a></footer>
+        </nav>
+      </section>
+    </section>
+    <footer class="newsFoot">
+      <nav class="suggestion">
+        <h4>Leia também</h4>
+        <ul>
+
+        </ul>
+      </nav>
+      <nav class="suggestion">
+        <h4>Veja mais na internet</h4>
+        <ul>
+
+        </ul>
+      </nav>
+    </footer>
+  </article>
+  <article class="commentBlock">
+    <div class="wrapper">
+      <h2 class="heading">Comente</h2>
+      <div id="disqus_thread" class="disqus"></div>
+    </div>
+  </article>
+</main>
