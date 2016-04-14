@@ -125,10 +125,12 @@ Promise.reduce(
     },
     {}
   ).then((finalValue) => {
+    console.log(finalValue)
     console.log('queries executed: ' + queriesExecuted)
     var fs = require('fs')
     var stringOut = ''
     for (tag in finalValue) {
+      console.log(tag + "," + finalValue[tag] + '/n')
       stringOut += tag + ' , ' + finalValue[tag] + '/n'
     }
     console.log('output:')
