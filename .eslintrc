@@ -1,6 +1,7 @@
 {
   "extends": "prodest",
   "rules": {
-    "linebreak-style": [2]
+    "indent": [1, 2],
+    "computed-property-spacing": [0]
   }
 }
