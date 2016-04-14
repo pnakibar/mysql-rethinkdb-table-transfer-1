@@ -13,6 +13,7 @@
     let models = require( './model/materia' );
     let shortid = require( 'shortid' );
     let Promise = require( 'bluebird' );
+    let clean = require( './services/cleanText' );
 
     // shortid conf
     shortid.characters( '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ$!' );
@@ -20,7 +21,9 @@
     // args
     const INTEGRATION_NAME = process.argv[2];
     const SQL_FILE = 'sqls/' + INTEGRATION_NAME + '.sql';
+    const SQL_FILE_ALTER = 'sqls/gazetaonline_alter.sql';
     const RETHINK_TABLE = process.argv[3];
+
     const LOWER_BOUND = process.argv[4] ? process.argv[4] : null;
     const UPPER_BOUND = process.argv[5] ? process.argv[5] : null;
 
@@ -169,36 +172,11 @@
 
 
 
-    let callMaxValue = ( conn ) => {
-        console.info( 'parte 1 - obtendo o old_materia_cd' );
-        return rUtils.r.table( RETHINK_TABLE )
-          .filter( { sourceType: INTEGRATION_NAME } )
-          .max( 'sourceId' )
-          .run( conn )
-          .catch( ( err ) => {
-              if ( err ) {
-                  console.warn( 'rethinkdb está vazio!' );
-                  return { sourceId: -1 };
-              }
-          } );
-    };
 
-    let assemblySQL = ( maxValue, lowerBound, upperBound, sqlpath ) => {
+    let assemblySQLAlter = ( value , sqlpath ) => {
         const sqlString = fs.readFileSync( sqlpath ).toString();
-
         // conforme escopo , deve seguir do maior + 1
-        let min = 0;
-        if ( maxValue ) {
-            min = lowerBound ? lowerBound : maxValue.sourceId + 1;
-        }
-
-        if ( min && upperBound ) {
-            console.info( 'migração começando de: ' + min + ' e indo até: ' + upperBound );
-            return sqlString + ' AND ma.cd_matia >= ' + min + ' AND ma.cd_matia <= ' + upperBound
-        } else {
-            console.info( 'migração começando de: ' + min );
-            return sqlString + ' AND ma.cd_matia >= ' + min
-        }
+        return sqlString + ' AND ma.cd_matia = ' + value
 
     };
 

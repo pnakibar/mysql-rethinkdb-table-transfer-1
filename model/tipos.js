@@ -11,10 +11,13 @@
     gazetaonline_noticia: require( './gazetaonline_noticia/integration' )
   };
 
-  let arr = ['gazetaonline_filme', 'gazetaonline_noticia'];
+  let arr = [ 'gazetaonline_filme', 'gazetaonline_noticia' ];
 
   module.exports = {
     integracoes: integracoes, arr: arr
-  }
+  };
 
 }());
+
+
+
