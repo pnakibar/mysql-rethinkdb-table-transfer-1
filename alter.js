@@ -2,45 +2,46 @@
 // melhorar o fluxo de saida em caso de erros
 // implementar saida forçada em caso de erros continuos.
 
-(function () {
-    "use strict";
-    const _ = require('lodash');
-    const fs = require('fs');
-    const ejs2html = require('./services/ejs2html');
-    let cxense = require('./services/cxense');
-    let rUtils = require('./services/rethinkUtils');
-    let models = require('./model/materia');
-    let shortid = require('shortid');
+(function() {
 
+    'use strict';
+    const _ = require( 'lodash' );
+    const fs = require( 'fs' );
+    const ejs2html = require( './services/ejs2html' );
+    let cxense = require( './services/cxense' );
+    let rUtils = require( './services/rethinkUtils' );
+    let models = require( './model/materia' );
+    let shortid = require( 'shortid' );
+    let Promise = require( 'bluebird' );
+    let clean = require( './services/cleanText' );
 
     // shortid conf
-    shortid.characters('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
-
-
+    shortid.characters( '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ$!' );
 
     // args
     const INTEGRATION_NAME = process.argv[2];
     const SQL_FILE = 'sqls/' + INTEGRATION_NAME + '.sql';
+    const SQL_FILE_ALTER = 'sqls/gazetaonline_alter.sql';
     const RETHINK_TABLE = process.argv[3];
+
     const LOWER_BOUND = process.argv[4] ? process.argv[4] : null;
     const UPPER_BOUND = process.argv[5] ? process.argv[5] : null;
 
+    let sendToCxEnse = ( row, rooturl ) => {
+        cxense.publish( rooturl + row.old_materia_path )
+          .then( ( response ) => {
+              // resposta do cxense
+              console.log( 'inserido no cxense: ' + row.old_materia_id );
+              console.log( 'resposta cxense: ' );
+              console.log( response );
 
-
-
-
-    let sendToCxEnse = (row,rooturl) => {
-        cxense.publish(rooturl + row.old_materia_path)
-            .then((response) => {
-                // resposta do cxense
-                console.log('inserido no cxense: ' + row.old_materia_id);
-                console.log('resposta cxense: ');
-                console.log(response)
-
-            });
+          } );
     };
 
-    let transform = (row) => {
+
+
+
+    let transform = ( row ) => {
 
         let data = models.persistData;
 
@@ -50,271 +51,269 @@
         data.friendlyId = shortid.generate();
         data.cxResponse = {};
 
-        let preencheAutores =  (autor) => {
+        let preencheAutores = ( autor ) => {
             let xret = {};
 
             xret.nome = autor.nm_autor;
             xret.email = autor.ds_autor_email;
-            xret.facebook  = autor.ds_autor_faceb;
-            xret.instagram  = null ;
-            xret.twitter  = autor.ds_autor_twite ;
-            xret.endEletronicoPessoal  = null;
+            xret.facebook = autor.ds_autor_faceb;
+            xret.instagram = null;
+            xret.twitter = autor.ds_autor_twite;
+            xret.endEletronicoPessoal = null;
 
             return xret;
         };
 
+        let preencheImagens = ( imagem ) => {
+            let xret = {};
+            xret.url = imagem.link;
+            xret.default = ( imagem.is_default === 1 );
+            xret.caption = null;
+            xret.width = imagem.width;
+            xret.height = imagem.height;
+
+            return xret;
+        };
+
+        let str = row.old_materia_path.replace( '/_conteudo', '' );
 
         // tratando o endereço antigo.
-        let rexp_path = str.match(/(^[^_]*_conteudo)|(?=[A-Za-z0-9.-]+\.[A-Za-z0-9.-]{3,4}$).+/g);
-        let rexp_file = _.tail(_.head(str.match(/((?=[A-Za-z.-]+\.[A-Za-z0-9.-]{3,4}$).+)/g)));
+        let rexp_path = str.match( /(?=[A-Za-z0-9.-]+\.[A-Za-z0-9.-]{3,4}$).+/g );
+        let rexp_file =  _.head( _.tail( _.last( rexp_path ).match( /(.+?)(\.[^.]*$|$)/i ) ) );
+        let rexp_suffix = _.last( _.last( rexp_path ).match( /(.+?)(\.[^.]*$|$)/i ) );
 
-
-
-
-        let taxonomia = "";
-        rexp_path.forEach((el) => {
-            taxonomia = str.replace(el,'');
-        });
-
-        let file = rexp_file + '-' + data.friendlyId;
-
+        let taxonomia = str.replace( rexp_file + rexp_suffix, '' );
+        let file = rexp_file + '-' + data.friendlyId + rexp_suffix;
 
         data.materia = {
-            "taxonomia" : taxonomia,
-            "file" : file,
-            "autor" : row.autores.map(d=> preencheAutores(d)),
-            "tag": row.old_materia_palavra ? row.old_materia_palavra.split(','): [],
-            "sessao": "",
-            "local": "",
-            "imagem": {
-                "url": "", // aguardar email de deuclerio da analise do midia
-                "caption": row.old_materia_midia
+            'taxonomia': taxonomia,
+            'file':      file,
+            'autor':     row.autores.map( ( d ) => preencheAutores( d ) ),
+            'imagens':   row.imagens.map( ( d ) => preencheImagens( d ) ),
+            'tag':       row.old_materia_palavra ? row.old_materia_palavra.split( ',' ) : [],
+            //'imagem':    {
+            //  'url':     '', // aguardar email de deuclerio da analise do midia
+            //  'caption': row.old_materia_midia
+            //},
+            'materia':   {
+                'id':                   row.old_materia_id,
+                'dataInclusao':         row.old_materia_data_inclusao,
+                'dataPublicacao':       row.old_materia_data_publicacao,
+                'assunto':              row.old_materia_assunto,
+                'titulo':               row.old_materia_titulo,
+                'conteudo':             {
+                    'subTitulo': row.old_materia_chape, 'newsContent': row.old_materia_ds
+                },
+                'chamada':              row.old_materia_chape,
+                'endEletronico':        row.old_materia_path,
+                'endEletronicoCompart': row.old_materia_path_encurtado,
+                'impresso':             {
+                    'edicao': row.old_jornal_cd + ' ' + row.old_jornal_ds, 'ehPaga': false
+                },
+                'podeComentar':         true,
+                'geolocalizacao':       {
+                    'latitude': 0, 'longitude': 0
+                },
+                tipo:                   row.old_materia_assunto
             },
-            "materia": {
-                "id": row.old_materia_id,
-                "dataInclusao": row.old_materia_data_inclusao,
-                "dataPublicacao": row.old_materia_data_publicacao,
-                "assunto": row.old_materia_assunto,
-                "titulo": row.old_materia_titulo,
-                "conteudo": {
-                    "subTitulo": row.old_materia_chape,
-                    "newsContent": row.old_materia_ds
-                },
-                "chamada": row.old_materia_chape,
-                "endEletronico": row.old_materia_path,
-                "endEletronicoCompart": row.old_materia_path_encurtado,
-                "impresso": {
-                    "edicao": row.old_jornal_cd + ' ' + row.old_jornal_ds,
-                    "ehPaga": false
-                },
-                "podeComentar": true,
-                "geolocalizacao": {
-                    "latitude": 0,
-                    "longitude": 0
-                },
-                tipo: row.old_materia_assunto,
-                //"tipo": {
-                //    "video": false,
-                //    "audio": false,
-                //    "entrevista": false,
-                //    "artigo": false,
-                //    "materiaEspecial": false,
-                //    "transito": false
-                //},
-                "dataValidade": null,
-                "humor" : null,
-                //"humor": {
-                //    "feliz": false,
-                //    "neutro": false,
-                //    "triste": false
-                //},
-                "relevanciaEditorial": null
-            },
-            "fonte": {
-                "nome": row.old_noticia_nm_fonte ? row.old_noticia_nm_fonte : null ,
-                "endEletronico": row.old_noticia_ds_fonte_url ? row.old_noticia_ds_fonte_url : null
+            'fonte':     {
+                'nome':          row.old_noticia_nm_fonte ? row.old_noticia_nm_fonte : null,
+                'endEletronico': row.old_noticia_ds_fonte_url ? row.old_noticia_ds_fonte_url : null
             }
 
         };
 
-
         return data;
     };
 
-
-
-    let writeRowRethink = (row,conn) => {
+    let writeRowRethink = ( row, conn ) => {
 
         try {
 
-            return rUtils.r.table(RETHINK_TABLE).insert(row).run(conn)
-                .then((resp) => {
-                    console.log(resp);
-                    return resp;
-                })
-                .catch((error) => {
-                    // tratar erro , a principio o erro de linha não para o processo.
-                    console.error('error on ' + row.old_materia_id + ':');
-                    console.error(error);
+            return rUtils.r.table( RETHINK_TABLE ).insert( row ).run( conn )
+              .then( ( resp ) => {
+                  console.log( resp );
+                  return resp;
+              } )
+              .catch( ( error ) => {
+                  // tratar erro , a principio o erro de linha não para o processo.
+                  console.error( 'error on ' + row.old_materia_id + ':' );
+                  console.error( error );
 
-                });
+              } );
 
-        }catch (err) {
+        } catch ( err ) {
             throw err;
         }
 
+    };
 
 
+    let readRowRethink = ( row, conn, code, integration ) => {
+        try {
+
+            return rUtils.r.table( RETHINK_TABLE ).filter( { 'sourceId': code, 'sourceType': integration } )
+              .then( ( resp ) => {
+                  console.log( resp );
+                  return resp;
+              } )
+              .catch( ( error ) => {
+                  // tratar erro , a principio o erro de linha não para o processo.
+                  console.error( 'error on ' + row.old_materia_id + ':' );
+                  console.error( error );
+
+              } );
+
+        } catch ( err ) {
+            throw err;
+        }
 
     };
 
 
-    let callMaxValue = (conn) => {
-        console.info('parte 1 - obtendo o old_materia_cd');
-        return rUtils.r.table(RETHINK_TABLE)
-            .filter({sourceType : INTEGRATION_NAME})
-            .max('sourceId')
-            .run(conn)
-            .catch((err) => {
-                if (err) {
-                    console.warn('rethinkdb está vazio!');
-                    return {sourceId: -1}
-                }
-            })
+
+
+    let assemblySQLAlter = ( value , sqlpath ) => {
+        const sqlString = fs.readFileSync( sqlpath ).toString();
+        // conforme escopo , deve seguir do maior + 1
+        return sqlString + ' AND ma.cd_matia = ' + value
+
+    };
+
+    let getMySQLdata = ( sql, mysqlconn ) => mysqlconn.raw( sql );
+
+    // ler arquivo sql
+    let getAutores = ( cd_matia, mysqlconn ) => {
+        console.info( 'obtendo autor para a materia ' + cd_matia );
+
+
+        return mysqlconn
+          .select( '*' )
+          .from( 'autmt' )
+          .innerJoin( 'autor', 'autmt.cd_autor', 'autor.cd_autor' )
+          .where( 'cd_matia', '=', cd_matia );
+    };
+
+    // ler arquivo sql
+    let getImagens = ( cd_matia, mysqlconn ) => {
+        console.info( 'obtendo midias para a materia ' + cd_matia );
+
+        let select_str = `ds_midia_credi as credito,
+	     ds_midia_link as link ,
+       nm_midia_inter_thumb1 as thumb1,
+       nm_midia_inter_thumb2 as thumb2,
+       nm_midia_inter_thumb3 as thumb3,
+       ds_midma_legen as caption,
+       id_midma_princ as is_default,
+       cd_midia_h as height,
+       cd_midia_w as width`;
+
+        return mysqlconn.select( select_str )
+          .from( 'midma' )
+          .innerJoin( 'midia', 'midma.cd_midia', 'midia.cd_midia' )
+          .where( 'midma.cd_matia', '=', cd_matia );
+    };
+
+    let insere_autores = ( row, mysqlconn ) => {
+
+        let xret = row;
+
+        return getAutores( xret.old_materia_cd, mysqlconn )
+          .then( ( autores ) => {
+              // adiciona coluna autores no json
+              console.info( 'obtido numero de autores da materia ' + xret.old_materia_cd + ':' + autores.length );
+              xret.autores = autores;
+              return xret;
+          } ).catch( ( err ) => {
+              console.error( 'erro obtendo autores da materia = ', xret.old_materia_cd );
+          } );
+
     };
 
 
+    let insere_imagens = ( row, mysqlconn ) => {
 
+        let xret = row;
 
-    rUtils.getConfig('gazetaonline_filme')
-        .then((config) => {
-            const knex = require('knex')({
-                client: 'mysql',
-                connection: {
-                    host: config.db.dbhost,
-                    user: config.db.dbuser,
-                    password: config.db.dbpass,
-                    database: config.db.dbname,
-                    charset: 'latin1' //config.charset
-                }
-            });
+        return getImagens( xret.old_materia_cd, mysqlconn )
+          .then( ( imagens ) => {
+              // adiciona coluna autores no json
+              console.log(xret);
+              console.info( 'obtido numero de imagens da materia ' + xret.old_materia_cd + ':' + imagens.length );
+              xret.imagens = imagens;
+              return xret;
+          } ).catch( (err) => {
+              console.error( 'erro obtendo imagens da materia = ', xret.old_materia_cd );
+          } );
 
-            let getMySQLdata = (sql) => knex.raw(sql);
+    };
 
-            // ler arquivo sql
-            let getAutores = (cd_matia) => {
-                console.info('obtendo autor para a materia ' + cd_matia);
-                return knex.select('*')
-                    .from('autmt')
-                    .innerJoin('autor', 'autmt.cd_autor', 'autor.cd_autor')
-                    .where('cd_matia', '=', cd_matia)
-            };
+    rUtils.getConfig( 'gazetaonline_filme' )
+      .then( ( config ) => {
+          const knex = require( 'knex' )( {
+              client: 'mysql', connection: {
+                  host: config.db.dbhost,
+                  user: config.db.dbuser,
+                  password: config.db.dbpass,
+                  database: config.db.dbname,
+                  charset: 'latin1' //config.charset
+              }
+          } );
 
+          return knex;
+      } )
+      .then( ( knex ) => Promise.all( [ knex, rUtils.getConnection ] ) )
+      //todo testar o fluxo
+      .then( ( result ) => {
+          // implementar range para simular stream com _.range([start=0], end, [step=1])
+          let knex = result[0];
+          let conn = result[1];
+          let dados = callMaxValue( conn )
+            .then( ( maxValue ) => getMySQLdata( assemblySQL( maxValue, LOWER_BOUND, UPPER_BOUND, SQL_FILE ), knex ) )
+            .then( ( response ) => _.head( response ) );
 
-            let insere_autores = (row) => {
+          /*aplicando transformacoes e gravando linha a linha e cascateando em promise*/
+          dados.then( ( linhas ) => {
+              let promises = [];
 
-                let xret = row;
+              linhas.forEach( ( row ) => {
+                  let promise = insere_autores( row, knex )
+                  //todo enfileirar a operacao de gravar no cxense e processar o html da materia aqui
+                    .then( ( row_with_authors ) => insere_imagens( row_with_authors , knex ) )
+                    .then( ( row_with_authors_images ) => {
+                        let wdata = transform( row_with_authors_images );
+                        return ejs2html.ejs2html( 'template.ejs', __dirname + '/model', wdata.materia.file, __dirname + '/out/' + wdata.materia.taxonomia, { noticia : wdata.materia } )
+                          .then( () => wdata );
+                    } )
+                    .then( ( wdata ) => {
+                        return writeRowRethink( wdata, conn );
+                    } )
+                    .catch( ( err ) => console.error( err.message ) );
 
-                return getAutores(xret.old_materia_cd)
-                    .then((autores) => {
-                        // adiciona coluna autores no json
-                        console.info('obtido numero de autores da materia '+ xret.old_materia_cd + ':' + autores.length );
-                        xret.autores = autores;
-                        return xret;
-                    }).catch((err) => {
-                        console.error('erro obtendo autores da materia = ', xret.old_materia_cd);
-                    });
+                  // enfileirando promise
+                  promises.push( promise );
+              } );
 
-            };
+              /*aguardando o final para que todas as promises processem*/
+              Promise.all( promises ).then( () => {
+                  console.info( 'processo finalizado com sucesso' );
+                  process.exit( 0 );
+              } );
 
+          } ).catch( ( err ) => {
+              console.log( err.message );
+              process.exit( -1 );
+          } );
 
-            rUtils.getConnection
-                .then((conn) => {
+      } )
+      .catch( ( err ) => {
+          console.error( err.message );
 
-                    let assemblySQL = (maxValue,lowerBound,upperBound,sqlpath) => {
-                        const sqlString = fs.readFileSync(sqlpath).toString();
+          /* fonte
+           * http://stackoverflow.com/questions/5266152/how-to-exit-in-node-js
+           * */
+          process.exit( -1 );
 
-
-                        // conforme escopo , deve seguir do maior + 1
-                        let min = 0;
-                        if (maxValue){
-                            min = lowerBound ? lowerBound : maxValue.sourceId + 1;
-                        }
-
-
-                        if (min && upperBound) {
-                            console.info('migração começando de: ' + min + ' e indo até: ' + upperBound);
-                            return sqlString + ' AND ma.cd_matia >= ' + min + ' AND ma.cd_matia <= ' + upperBound
-                        } else {
-                            console.info('migração começando de: ' + min);
-                            return sqlString + ' AND ma.cd_matia >= ' + min
-                        }
-
-                    };
-
-                    // implementar range para simular stream com _.range([start=0], end, [step=1])
-
-
-                    let dados =  callMaxValue(conn)
-                        .then((maxValue) =>   getMySQLdata(assemblySQL(maxValue,LOWER_BOUND,UPPER_BOUND,SQL_FILE)) )
-                        .then((response) => _.head(response));
-
-                    /*aplicando transformacoes e gravando linha a linha e cascateando em promise*/
-                    dados.then((linhas) => {
-                        let promises = [];
-
-                        linhas.forEach((row) => {
-                            let promise = insere_autores(row)
-                            //todo enfileirar a operacao de gravar no cxense e processar o html da materia aqui
-                                .then((row) => {
-                                    let wdata = transform(row);
-                                    return ejs2html.ejs2html('template.ejs',__dirname+'/model',wdata.file,__dirname+wdata.taxonomia, wdata)
-                                        .then((result) => wdata);
-                                })
-                                .then((wdata) => {
-                                    return writeRowRethink(wdata,conn)
-                                })
-                                .catch((err) => console.error(err.message));
-
-                            // enfileirando promise
-                            promises.push(promise);
-                        });
-
-                        /*aguardando o final para que todas as promises processem*/
-                        Promise.all(promises).then(() => {
-                            console.info('processo finalizado com sucesso');
-                            process.exit(0);
-                        })
-
-                    }).catch((err) => {
-                        console.log(err.message);
-                        process.exit(-1);
-                    })
-
-
-                })
-                .catch((err) => {
-                    console.error(err.message);
-
-                    /* fonte
-                     * http://stackoverflow.com/questions/5266152/how-to-exit-in-node-js
-                     * */
-                    process.exit(-1);
-
-                } );
-
-    });
-
-
-
-
-
-
-
-
-
-
+      } );
 
 }());
-
-

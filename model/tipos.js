@@ -4,21 +4,20 @@
  * o objeto tem a finalidade somente de mapear
  *
  */
-(function () {
+(function() {
 
+  let integracoes = {
+    gazetaonline_filme:   require( './gazetaonline_filme/integration' ),
+    gazetaonline_noticia: require( './gazetaonline_noticia/integration' )
+  };
 
-    let integracoes = {
-        gazetaonline_filme : require('./gazetaonline_filme/integration'),
-        gazetaonline_noticia : require('./gazetaonline_noticia/integration')
-    };
+  let arr = [ 'gazetaonline_filme', 'gazetaonline_noticia' ];
 
-    let arr = ['gazetaonline_filme','gazetaonline_noticia'];
-
-
-    module.exports = {
-        integracoes : integracoes,
-        arr : arr
-    }
-
+  module.exports = {
+    integracoes: integracoes, arr: arr
+  };
 
 }());
+
+
+

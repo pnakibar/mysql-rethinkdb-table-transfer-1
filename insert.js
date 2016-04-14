@@ -13,6 +13,7 @@
   let models = require( './model/materia' );
   let shortid = require( 'shortid' );
   let Promise = require( 'bluebird' );
+  let clean = require( './services/cleanText' );
 
   // shortid conf
   shortid.characters( '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ$!' );
@@ -237,8 +238,9 @@
         console.info( 'obtido numero de imagens da materia ' + xret.old_materia_cd + ':' + imagens.length );
         xret.imagens = imagens;
         return xret;
-      } ).catch( (err) => {
+      } ).catch( ( err ) => {
         console.error( 'erro obtendo imagens da materia = ', xret.old_materia_cd );
+        console.error( err.message );
       } );
 
   };
