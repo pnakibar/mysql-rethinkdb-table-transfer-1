@@ -23,10 +23,13 @@
         "tag": [],
         "sessao": "",
         "local": "",
-        "imagem": {
+        "imagens": [{
             "url": "",
-            "caption": ""
-        },
+            "default": "",
+            "caption": "",
+            "width" : "",
+            "height": ""
+        }],
         "materia": {
             "id": 0,
             "dataInclusao": "",
@@ -49,22 +52,9 @@
                 "latitude": 0,
                 "longitude": 0
             },
-            "tipo": {
-                "video": false,
-                "audio": false,
-                "entrevista": false,
-                "artigo": false,
-                "materiaEspecial": false,
-                "transito": false
-            },
-            "dataValidade": "",
-            "humor": {
-                "feliz": true,
-                "neutro": false,
-                "triste": false
-            },
-            "relevanciaEditorial": 100
+            "dataValidade": ""
         },
+        tipo: "",
         "fonte": {
             "nome": "",
             "endEletronico": ""

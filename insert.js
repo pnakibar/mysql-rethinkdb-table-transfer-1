@@ -115,23 +115,7 @@
                     "latitude": 0,
                     "longitude": 0
                 },
-                tipo: row.old_materia_assunto,
-                //"tipo": {
-                //    "video": false,
-                //    "audio": false,
-                //    "entrevista": false,
-                //    "artigo": false,
-                //    "materiaEspecial": false,
-                //    "transito": false
-                //},
-                "dataValidade": null,
-                "humor" : null,
-                //"humor": {
-                //    "feliz": false,
-                //    "neutro": false,
-                //    "triste": false
-                //},
-                "relevanciaEditorial": null
+                tipo: row.old_materia_assunto
             },
             "fonte": {
                 "nome": row.old_noticia_nm_fonte ? row.old_noticia_nm_fonte : null ,
