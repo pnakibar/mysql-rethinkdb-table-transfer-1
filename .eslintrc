@@ -1,0 +1,6 @@
+{
+  "extends": "prodest",
+  "rules": {
+    "linebreak-style": [2]
+  }
+}
