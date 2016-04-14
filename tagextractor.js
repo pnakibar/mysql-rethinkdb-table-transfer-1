@@ -125,13 +125,15 @@ Promise.reduce(
     },
     {}
   ).then((finalValue) => {
-    console.log(finalValue)
     console.log('queries executed: ' + queriesExecuted)
     var fs = require('fs')
     var stringOut = ''
     for (tag in finalValue) {
       stringOut += tag + ' , ' + finalValue[tag] + '/n'
     }
+    console.log('output:')
+    console.log(stringOut)
+
     fs.writeFile('output.csv', stringOut)
     process.exit(0)
   }).catch((err) => {
