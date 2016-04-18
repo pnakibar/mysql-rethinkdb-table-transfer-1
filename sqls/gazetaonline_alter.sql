@@ -1,5 +1,5 @@
 SELECT
-    log.cd_logfe_table_chave,
+    mat.cd_matia,
     log.cd_logfe
 FROM
     logfe log
@@ -10,7 +10,8 @@ WHERE
 union all
 
 SELECT
-    matia.cd_matia
+    matia.cd_matia,
+    log.cd_logfe
 FROM
     logfe log
     INNER JOIN midma ON log.cd_logfe_table_chave = midma.cd_midma
@@ -21,7 +22,9 @@ WHERE
 
 union all
 SELECT
-    autmt.cd_matia
+    matia.cd_matia,
+    log.cd_logfe
+
 FROM
     logfe log
     INNER JOIN autmt ON log.cd_logfe_table_chave = autmt.cd_autmt
@@ -29,4 +32,3 @@ FROM
 WHERE
     (log.nm_logfe_table in ('autmt')
         AND log.ds_logfe_acao IN ( 'INSERT', 'UPDATE' , 'DELETE'))
-

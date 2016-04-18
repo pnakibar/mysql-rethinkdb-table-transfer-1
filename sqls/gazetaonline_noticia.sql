@@ -376,6 +376,3 @@ FROM matia ma
   LEFT JOIN notia no ON ma.cd_matia = no.cd_matia
   LEFT JOIN midma md ON ma.cd_matia = md.cd_matia
 WHERE ma.id_matia_tipo = 1
-
-
-
