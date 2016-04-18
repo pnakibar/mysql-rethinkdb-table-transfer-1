@@ -51,30 +51,15 @@
 
   // inicio do processamento
   logDeMateriasAtualizadas.then((valoresAtualizados) => {
-    return valoresAtualizados.map((valor) => valor.idMateria)
+    return valoresAtualizados.map((valor) => ''+valor.idMateria)
   }).then((idMaterias) => {
-    return Promise.all(
-      [
-        tabelaNoticia(idMaterias)
-      ]
-    )
+    return tabelaNoticia(idMaterias)
+  }).then((materiasSemAutor) => {
+    return Promise.map(materiasSemAutor[0], (materia) => getAutores(materia, knex))
   }).then((materias) => {
-    let noticias = materias[0][0]
-    let filmes = materias[1][0]
-
-    console.log((noticias.length + filmes.length) + ' valores atualizados no banco original.')
-    console.log(noticias.length + ' noticiais atualizados no banco original.')
-    console.log(filmes.length + ' filmes atualizados no banco original.')
-
-    return Promise.map(
-      [fnoticias],
-      (materia) => {
-        return transform(materia, 'ATUALIZACAO_LOGFE')
-      }
-    )
+    return materias.map((materia) => transform(materia, 'ATUALIZACAO_LOGFE'))
   }).then((materiasProntas) => {
-    delete materiasProntas[0].sourceData
-    console.log(materiasProntas[0])
+    // TODO: inserir no rethinkdb atualizando
   }).catch((err) => {
     console.error(err)
     process.exit(1)

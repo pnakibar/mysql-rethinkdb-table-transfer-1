@@ -1,6 +1,6 @@
 module.exports = (materia, knex) => {
   'use strict'
-  var cd_matia = materia.cd_matia
+  let cd_matia = materia.cd_matia
   return knex.select('*')
     .from('autmt')
     .innerJoin('autor', 'autmt.cd_autor', 'autor.cd_autor')
